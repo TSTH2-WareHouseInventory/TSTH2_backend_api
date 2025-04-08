@@ -3,13 +3,12 @@
 namespace App\Repositories;
 
 use App\Models\JenisBarang;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class JenisBarangRepository
 {
-    public function getAll(): LengthAwarePaginator
+    public function getAll()
     {
-        return JenisBarang::with('user')->paginate(10);
+        return JenisBarang::with('user')->get();
     }
 
     public function getById($id): ?JenisBarang

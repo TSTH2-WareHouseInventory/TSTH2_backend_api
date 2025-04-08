@@ -42,7 +42,8 @@ class BarangController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         try {
-            $barang = $this->barangService->createBarang($request->all());
+            $data = $request->all();
+            $barang = $this->barangService->createBarang($data);
             return response()->json([
                 'message' => 'Barang berhasil dibuat!',
                 'data' => new BarangResource($barang)

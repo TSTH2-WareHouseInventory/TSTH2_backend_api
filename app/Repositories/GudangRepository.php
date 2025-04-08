@@ -3,13 +3,12 @@
 namespace App\Repositories;
 
 use App\Models\Gudang;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class GudangRepository
 {
-    public function getAll(int $perpage = 10): LengthAwarePaginator
+    public function getAll()
     {
-        return Gudang::paginate($perpage);
+        return Gudang::get();
     }
 
     public function findById(int $id): ?Gudang

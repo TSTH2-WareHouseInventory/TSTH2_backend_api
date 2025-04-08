@@ -52,33 +52,32 @@ class AuthController extends Controller
 
 
     public function logout(Request $request)
-{
-    try {
-        $user = Auth::user();
+    {
+        try {
+            $user = Auth::user();
 
-        if ($user) {
-            Token::where('user_id', $user->id)->update(['revoked' => true]);
+            if ($user) {
+                Token::where('user_id', $user->id)->update(['revoked' => true]);
+
+                return response()->json([
+                    'response_code' => '200',
+                    'status'        => 'success',
+                    'message'       => 'Logout successful',
+                ], 200);
+            }
 
             return response()->json([
-                'response_code' => '200',
-                'status'        => 'success',
-                'message'       => 'Logout successful',
-            ], 200);
+                'response_code' => '401',
+                'status'        => 'error',
+                'message'       => 'User not authenticated',
+            ], 401);
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json([
+                'response_code' => '500',
+                'status'        => 'error',
+                'message'       => 'Failed to logout',
+            ], 500);
         }
-
-        return response()->json([
-            'response_code' => '401',
-            'status'        => 'error',
-            'message'       => 'User not authenticated',
-        ], 401);
-    } catch (\Exception $e) {
-        Log::error($e);
-        return response()->json([
-            'response_code' => '500',
-            'status'        => 'error',
-            'message'       => 'Failed to logout',
-        ], 500);
-    }
     }
 }
-

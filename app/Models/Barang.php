@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Database\Seeders\JenisBarangSeeder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Barang extends Model
 {
+    use HasFactory, SoftDeletes;
     protected $table = 'barangs';
     protected $fillable = [
         'jenisbarang_id',
@@ -29,7 +32,7 @@ class Barang extends Model
     }
     public function category()
     {
-        return $this->belongsTo(BarangCategory::class);
+        return $this->belongsTo(BarangCategory::class, 'barangcategory_id');
     }
 
     // Relasi ke Satuan

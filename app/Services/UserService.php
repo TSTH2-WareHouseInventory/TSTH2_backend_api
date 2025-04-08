@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use App\Models\User;
 
 class UserService
 {
@@ -30,10 +30,10 @@ class UserService
 
     public function create(array $data)
     {
-        // Cek apakah nama atau email sudah ada sebelum validasi Laravel
         if (User::where('name', $data['name'])->exists()) {
             throw new \Exception('Nama sudah digunakan.');
         }
+
         if (User::where('email', $data['email'])->exists()) {
             throw new \Exception('Email sudah digunakan.');
         }
@@ -48,7 +48,8 @@ class UserService
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).+$/',
                 'confirmed'
             ],
-            'roles' => 'required|array|exists:roles,name'
+            'roles' => 'required|array',
+            'roles.*' => 'string|exists:roles,name',
         ]);
 
         if ($validator->fails()) {
@@ -57,7 +58,10 @@ class UserService
 
         $data['password'] = Hash::make($data['password']);
 
-        return $this->userRepository->create($data);
+        $user = $this->userRepository->create($data);
+        $user->syncRoles($data['roles']);
+
+        return $user;
     }
 
     public function update($id, array $data)
@@ -70,6 +74,7 @@ class UserService
         if (isset($data['name']) && User::where('name', $data['name'])->where('id', '!=', $id)->exists()) {
             throw new \Exception('Nama sudah digunakan.');
         }
+
         if (isset($data['email']) && User::where('email', $data['email'])->where('id', '!=', $id)->exists()) {
             throw new \Exception('Email sudah digunakan.');
         }
@@ -95,7 +100,6 @@ class UserService
 
         $this->userRepository->update($user, $data);
 
-        // Mengembalikan data user yang sudah diperbarui
         return $this->userRepository->getById($id);
     }
 
@@ -125,7 +129,9 @@ class UserService
             throw new \Exception('Password lama salah.');
         }
 
-        return $this->userRepository->update($user, ['password' => Hash::make($data['new_password'])]);
+        return $this->userRepository->update($user, [
+            'password' => Hash::make($data['new_password'])
+        ]);
     }
 
     public function delete($id)

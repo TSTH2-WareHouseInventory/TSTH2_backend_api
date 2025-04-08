@@ -9,7 +9,7 @@ class SatuanRepository
 {
     public function getAll()
     {
-        return Satuan::with('user')->paginate(10);
+        return Satuan::with('user')->get();
     }
 
     public function findById($id)

@@ -1,121 +1,73 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Models\Role;
+use App\Http\Resources\RoleResource;
+use App\Services\RoleService;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
-class RoleController extends Controller implements HasMiddleware
+class RoleController extends Controller
 {
-    /**
-     * Get the middleware that should be assigned to the controller.
-     */
+    protected $roleService;
+
+    public function __construct(RoleService $roleService)
+    {
+        $this->roleService = $roleService;
+    }
+
     public static function middleware(): array
     {
         return [
             'auth:api',
-            new Middleware('permission:view_role', only: ['index']),
+            new Middleware('permission:view_role', only: ['index', 'show']),
             new Middleware('permission:create_role', only: ['store']),
             new Middleware('permission:update_role', only: ['update']),
             new Middleware('permission:delete_role', only: ['destroy']),
         ];
     }
 
-    public function createRole(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|unique:roles,name',
-            'guard_name' => 'web'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-        $role = Role::create(['name' => $request->name]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role created successfully',
-            'data' => $role
-        ], 201);
-    }
-
     public function index()
     {
-        $roles = Role::all();
-        return response()->json([
-            'success' => true,
-            'data' => $roles
-        ]);
+        $roles = $this->roleService->getAll();
+        return RoleResource::collection($roles);
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $role = $this->roleService->create($request->all());
+            return response()->json([
+                'message' => 'Role berhasil dibuat',
+                'data' => new RoleResource($role)
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 400);
+        }
     }
 
     public function show($id)
     {
-        $role = Role::find($id);
-
-        if (!$role) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role tidak ditemukan.'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $role
-        ]);
+        $role = $this->roleService->getById($id);
+        return $role ? new RoleResource($role) : response()->json(['message' => 'Role tidak ditemukan.'], 404);
     }
 
     public function update(Request $request, $id)
     {
-        $role = Role::find($id);
-
-        if (!$role) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role tidak ditemukan.'
-            ], 404);
+        try {
+            $updated = $this->roleService->update($id, $request->all());
+            return $updated
+                ? response()->json(['message' => 'Role berhasil diperbarui.', 'data' => new RoleResource($updated)])
+                : response()->json(['message' => 'Role tidak ditemukan.'], 404);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 400);
         }
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|unique:roles,name,' . $id,
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-        $role->update([
-            'name' => $request->name,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role berhasil diperbarui.',
-            'data' => $role
-        ]);
     }
 
     public function destroy($id)
     {
-        $role = Role::find($id);
-
-        if (!$role) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role tidak ditemukan.'
-            ], 404);
-        }
-
-        $role->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role berhasil dihapus.'
-        ]);
+        return $this->roleService->delete($id)
+            ? response()->json(['message' => 'Role berhasil dihapus.'])
+            : response()->json(['message' => 'Role tidak ditemukan.'], 404);
     }
 }

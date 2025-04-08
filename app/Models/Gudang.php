@@ -21,8 +21,8 @@ class Gudang extends Model
         'deleted_at' => 'datetime:Y-m-d H:m:s',
     ];
 
-    public function operators()
+    public function barangs()
     {
-        return $this->belongsToMany(User::class, 'gudang_users');
+        return $this->belongsToMany(Barang::class, 'barang_gudangs')->withPivot('stok_tersedia', 'stok_dipinjam', 'stok_maintenance');
     }
 }
