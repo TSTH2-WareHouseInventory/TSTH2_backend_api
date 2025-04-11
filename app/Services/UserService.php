@@ -90,18 +90,41 @@ class UserService
             throw new ValidationException($validator);
         }
 
-        if (!empty($data['avatar'])) {
+        if (array_key_exists('avatar', $data) && $data['avatar'] !== null && $data['avatar'] !== '') {
             if ($user->avatar && $user->avatar !== 'default_avatar.png') {
                 Storage::disk('public')->delete($user->avatar);
             }
             $avatarPath = uploadBase64Image($data['avatar'], 'img/profil');
             $data['avatar'] = $avatarPath;
+
+        } else {
+            unset($data['avatar']);
+
         }
 
         $this->userRepository->update($user, $data);
 
         return $this->userRepository->getById($id);
     }
+
+    public function deleteAvatar($id)
+    {
+        $user = $this->userRepository->getById($id);
+        if (!$user) {
+            throw new \Exception('User tidak ditemukan');
+        }
+
+        if ($user->avatar && $user->avatar !== 'default_avatar.png') {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        // Set avatar jadi default
+        $user->avatar = 'default_avatar.png';
+        $user->save();
+
+        return $user;
+    }
+
 
     public function changePassword($id, array $data)
     {

@@ -37,15 +37,19 @@ class GudangController extends Controller
     public function store(Request $request)
     {
         try {
-            $gudang = $this->gudangService->create($request->all());
+
+            $data = $request->only(['name', 'description', 'user_id']);
+            $gudang = $this->gudangService->create($data);
+
             return response()->json([
                 'message' => 'Data gudang berhasil dibuat',
-                'data' => new GudangResource($gudang)
-            ]);
+                'data'    => new GudangResource($gudang),
+            ], 201);
+
         } catch (ValidationException $e) {
             return response()->json([
-                'errors' => $e->errors()
-            ], 400);
+                'errors' => $e->errors(),
+            ], 422);
         }
     }
 

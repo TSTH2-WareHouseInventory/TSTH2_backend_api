@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\GudangRepository;
+use App\Rules\IsOperatorUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -29,13 +30,17 @@ class GudangService
 
     public function create(array $data)
     {
-
+        // Validasi input, termasuk rule khusus IsOperatorUser
         $validator = Validator::make($data, [
-            'name' => ['required', 'string', 'max:255', 'unique:gudangs,name'],
+            'name'        => ['required', 'string', 'max:255', 'unique:gudangs,name'],
             'description' => ['nullable', 'string'],
-        ],  [
-            'name.required' => 'Nama gudang wajib diisi.',
-            'name.unique' => 'Nama gudang sudah digunakan.',
+            'user_id'     => ['required', 'exists:users,id', new IsOperatorUser()],
+        ], [
+            'name.required'     => 'Nama gudang wajib diisi.',
+            'name.unique'       => 'Nama gudang sudah digunakan.',
+            'user_id.required'  => 'User operator wajib dipilih.',
+            'user_id.exists'    => 'User tidak ditemukan.',
+
         ]);
 
         if ($validator->fails()) {
@@ -43,10 +48,11 @@ class GudangService
         }
 
 
-        $validatedData = $validator->validated();
-        $validatedData['slug'] = Str::slug($validatedData['name']);
+        $validated = $validator->validated();
+        $validated['slug'] = Str::slug($validated['name']);
 
-        return DB::transaction(fn() => $this->gudangRepository->create($validatedData));
+        // Simpan dalam transaction
+        return DB::transaction(fn() => $this->gudangRepository->create($validated));
     }
 
     public function update(int $id, array $data)

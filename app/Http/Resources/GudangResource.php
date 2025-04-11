@@ -18,6 +18,14 @@ class GudangResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'user_id'     => $this->user_id,
+            'operator'    => $this->whenLoaded('user', function () {
+                return [
+                    'id'    => $this->user->id,
+                    'name'  => $this->user->name,
+                    'email' => $this->user->email,
+                ];
+            }),
             'description' => $this->description,
             'stok_tersedia' => $this->stok_tersedia ?? $this->pivot->stok_tersedia ?? 0,
             'stok_dipinjam' => $this->stok_dipinjam ?? 0,
