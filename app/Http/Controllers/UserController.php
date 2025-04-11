@@ -81,8 +81,7 @@ class UserController extends Controller implements HasMiddleware
             ], 500);
         }
     }
-<<<<<<< HEAD
-=======
+
     public function deleteAvatar($id)
     {
         try {
@@ -98,7 +97,7 @@ class UserController extends Controller implements HasMiddleware
             ], 400);
         }
     }
->>>>>>> 681dadb9764c8bbbd02333b36175084ca1d705ca
+
 
     public function destroy($id)
     {
