@@ -34,7 +34,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::apiResource('users', UserController::class);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
-
+    Route::delete('/users/{id}/avatar', [UserController::class, 'deleteAvatar']);
 
     Route::apiResource('roles', RoleController::class);
 

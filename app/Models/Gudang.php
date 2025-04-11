@@ -13,6 +13,7 @@ class Gudang extends Model
         'name',
         'slug',
         'description',
+        'user_id'
     ];
 
     protected  $casts = [
@@ -24,5 +25,10 @@ class Gudang extends Model
     public function barangs()
     {
         return $this->belongsToMany(Barang::class, 'barang_gudangs')->withPivot('stok_tersedia', 'stok_dipinjam', 'stok_maintenance');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

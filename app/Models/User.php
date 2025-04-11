@@ -35,8 +35,10 @@ class User extends Authenticatable
 
     public function gudangs()
     {
-        return $this->belongsToMany(Gudang::class, 'gudang_users');
+        return $this->belongsToMany(Gudang::class, 'user_id');
     }
+
+
 
     /**
      * The attributes that should be hidden for serialization.

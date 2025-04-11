@@ -41,6 +41,8 @@ class Barang extends Model
         return $this->belongsTo(Satuan::class, 'satuan_id');
     }
 
+
+
     public function gudangs()
     {
         return $this->belongsToMany(Gudang::class, 'barang_gudangs')->withPivot('stok_tersedia', 'stok_dipinjam', 'stok_maintenance');

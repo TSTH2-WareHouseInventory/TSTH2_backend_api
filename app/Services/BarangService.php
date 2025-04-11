@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class BarangService
 {
@@ -32,18 +33,26 @@ class BarangService
     {
         $this->validateCreateData($data);
 
-        $existingBarang = $this->findSoftDeletedBarangByName($data['barang_nama']);
-        if ($existingBarang) {
-            return $this->restoreAndUpdateBarang($existingBarang, $data);
-        }
+        $existingBarang = Barang::withTrashed()->where('barang_nama', $data['barang_nama'])->first();
 
+        if ($existingBarang) {
+            if ($existingBarang->trashed()) {
+                return $this->restoreAndUpdateBarang($existingBarang, $data);
+            } else {
+                throw ValidationException::withMessages([
+                    'barang_nama' => 'Barang dengan nama ini sudah ada.'
+                ]);
+            }
+        }
         $data['barang_slug'] = $this->generateUniqueSlug($data['barang_nama']);
         $data['user_id'] = Auth::id();
         $data['barang_gambar'] = $this->handleImageUpload($data['barang_gambar'] ?? null);
 
         $barang = $this->barangRepository->create($data);
 
-        $this->attachGudangStok($barang, $data);
+        if (!empty($data['gudang_id'])) {
+            $this->attachGudangStok($barang, $data);
+        }
 
         return $barang;
     }
@@ -98,7 +107,7 @@ class BarangService
             'barang_nama' => 'required|string|max:255',
             'barang_harga' => 'required|numeric|min:0',
             'barang_gambar' => 'nullable|string',
-            'gudang_id' => 'required|exists:gudangs,id',
+            'gudang_id' => 'nullable|exists:gudangs,id',
             'stok_tersedia' => 'required|numeric|min:0',
         ])->validate();
     }

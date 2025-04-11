@@ -26,7 +26,7 @@ class SatuanRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'Nama satuan barang wajib diisi.',
+            'name.required' w=> 'Nama satuan barang wajib diisi.',
             'name.unique' => 'Nama satuan barang sudah digunakan.',
         ];
     }

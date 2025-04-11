@@ -25,7 +25,7 @@ class UserController extends Controller implements HasMiddleware
             new Middleware('permission:view_user', only: ['index', 'show']),
             new Middleware('permission:create_user', only: ['store']),
             new Middleware('permission:update_user', only: ['update', 'changePassword']),
-            new Middleware('permission:delete_user', only: ['destroy']),
+            new Middleware('permission:delete_user', only: ['destroy', 'deleteAvatar']),
         ];
     }
 
@@ -78,6 +78,21 @@ class UserController extends Controller implements HasMiddleware
                 'message' => 'Terjadi kesalahan saat memperbarui profil',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+    public function deleteAvatar($id)
+    {
+        try {
+            $user = $this->userService->deleteAvatar($id);
+
+            return response()->json([
+                'message' => 'Avatar berhasil dihapus',
+                'data' => new UserResource($user)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 400);
         }
     }
 
