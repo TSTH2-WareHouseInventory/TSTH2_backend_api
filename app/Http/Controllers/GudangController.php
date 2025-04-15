@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\GudangResource;
 use App\Services\GudangService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
 
-class GudangController extends Controller
+class GudangController extends Controller implements HasMiddleware
 {
     protected $gudangService;
 

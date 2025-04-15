@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TransactionTypeResource;
 use App\Services\TransactionTypeService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 use Illuminate\Validation\ValidationException;
 
-class TransactionTypeController extends Controller
+class TransactionTypeController extends Controller implements HasMiddleware
 {
     protected $transactionTypeService;
 

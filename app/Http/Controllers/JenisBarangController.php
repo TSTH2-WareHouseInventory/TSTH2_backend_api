@@ -7,8 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class JenisBarangController extends Controller
+class JenisBarangController extends Controller implements HasMiddleware
 {
     protected $jenisBarangService;
 

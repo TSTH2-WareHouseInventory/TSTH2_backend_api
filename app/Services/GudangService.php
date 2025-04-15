@@ -66,6 +66,7 @@ class GudangService
         $validator = Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'user_id'     => ['required', 'exists:users,id', new IsOperatorUser()],
         ]);
 
         if ($validator->fails()) {

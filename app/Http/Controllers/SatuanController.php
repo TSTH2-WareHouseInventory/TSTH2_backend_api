@@ -11,10 +11,11 @@ use Illuminate\Support\Str;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
 use Exception;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class SatuanController extends Controller
+class SatuanController extends Controller implements HasMiddleware
 {
     protected $satuanService;
 

@@ -50,9 +50,9 @@ class BarangService
 
         $barang = $this->barangRepository->create($data);
 
-        if (!empty($data['gudang_id'])) {
-            $this->attachGudangStok($barang, $data);
-        }
+        // if (!empty($data['gudang_id'])) {
+        //     $this->attachGudangStok($barang, $data);
+        // }
 
         return $barang;
     }
@@ -71,11 +71,13 @@ class BarangService
 
         if (!empty($data['barang_gambar'])) {
             $data['barang_gambar'] = $this->replaceImage($barang->barang_gambar, $data['barang_gambar']);
+        } else {
+            unset($data['barang_gambar']); // biar nggak override kalau kosong
         }
 
         $this->barangRepository->update($barang, $data);
 
-        $this->attachGudangStok($barang, $data);
+        // $this->attachGudangStok($barang, $data);
 
         return $barang;
     }
@@ -106,9 +108,6 @@ class BarangService
             'barangcategory_id' => 'nullable|exists:barang_categories,id',
             'barang_nama' => 'required|string|max:255',
             'barang_harga' => 'required|numeric|min:0',
-
-            'gudang_id' => 'nullable|exists:gudangs,id',
-            'stok_tersedia' => 'required|numeric|min:0',
         ])->validate();
     }
 
@@ -117,8 +116,6 @@ class BarangService
         Validator::make($data, [
             'barang_nama' => 'required|string|max:255',
             'barang_harga' => 'required|numeric|min:0',
-            'gudang_id' => 'required|exists:gudangs,id',
-            'stok_tersedia' => 'sometimes|numeric|min:0',
         ])->validate();
     }
 
@@ -142,6 +139,8 @@ class BarangService
 
         if (!empty($data['barang_gambar'])) {
             $updateData['barang_gambar'] = $this->handleImageUpload($data['barang_gambar']);
+        } else {
+            unset($data['barang_gambar']);
         }
 
         $this->barangRepository->update($barang, $updateData);

@@ -12,16 +12,11 @@ class TransactionDetail extends Model
 
     protected $fillable = [
         'transaction_id',
-        'barang_status_id',
         'barang_id',
         'gudang_id',
         'quantity',
         'tanggal_kembali'
     ];
-    public function statusBarang()
-    {
-        return $this->belongsTo(BarangStatus::class);
-    }
 
 
     public function transaction()

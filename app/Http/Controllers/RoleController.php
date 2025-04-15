@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
 
-class RoleController extends Controller
+class RoleController extends Controller implements HasMiddleware
 {
     protected $roleService;
 

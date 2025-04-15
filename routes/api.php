@@ -46,19 +46,13 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::apiResource('transaction-types', TransactionTypeController::class);
 
+    Route::apiResource('transactions', TransactionController::class);
+
     Route::apiResource('jenis-barangs', JenisBarangController::class);
     Route::patch('jenis-barang/{id}/restore', [JenisBarangController::class, 'restore']);
     Route::delete('jenis-barang/{id}/force-delete', [JenisBarangController::class, 'forceDelete']);
 
     //barang
-    Route::apiResource('barangs', BarangController::class);
-    Route::get('/barang/qrcode/save/{id}', [BarangController::class, 'generateQRCodeimage']);
-    Route::get('/generate-qrcodes', [BarangController::class, 'generateAllQRCodesimage']);
-    Route::get('/export-pdf', [BarangController::class, 'generateAllQRCodes']);
-    Route::get('/export-pdf/{id}', [BarangController::class, 'generateQRCodeById']);
-
-    Route::apiResource('transactions', TransactionController::class);
-
     Route::apiResource('barangs', BarangController::class);
 
     Route::get('/barang/qrcode/save/{id}', [QRCodeController::class, 'generateQRCodeImage']);
@@ -69,9 +63,7 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 Route::post('/toggle-permission', [PermissionController::class, 'togglePermission'])
-->middleware(['auth:api', 'role_or_permission:superadmin|manage_permissions']);
+    ->middleware(['auth:api', 'role_or_permission:superadmin|manage_permissions']);
 
 //memastikan cek role login
 Route::middleware(['auth:api'])->get('/check-roles', [UserController::class, 'checkRoles']);
-
-Route::apiResource('barangs', BarangController::class);

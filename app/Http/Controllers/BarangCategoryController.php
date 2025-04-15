@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\BarangCategoryResource;
 use App\Services\BarangCategoryService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
 
-class BarangCategoryController extends Controller
+class BarangCategoryController extends Controller implements HasMiddleware
 {
     protected $barangCategoryService;
 

@@ -21,7 +21,6 @@ class Barang extends Model
         'barang_harga',
         'barang_gambar',
         'user_id'
-
     ];
 
 
@@ -40,7 +39,6 @@ class Barang extends Model
     {
         return $this->belongsTo(Satuan::class, 'satuan_id');
     }
-
 
     public function gudangs()
     {

@@ -2,113 +2,165 @@
 
 namespace App\Repositories;
 
-use App\Models\{Transaction, TransactionDetail, Barang, BarangGudang};
+use App\Models\{Transaction, TransactionDetail, Barang, BarangGudang, Gudang};
+use Illuminate\Support\Facades\Auth;
 use Exception;
 
 class TransactionRepository
 {
     public function createTransaction($request)
     {
-        $gudangId = null;
+        $user = Auth::user();
+        $userId = $user->id;
+        $gudangId = $this->getGudangIdByUserId($userId);
 
         $transaction = Transaction::create([
-            'user_id' => $request->user_id,
+            'user_id' => $userId,
             'transaction_type_id' => $request->transaction_type_id,
             'transaction_code' => $this->generateTransactionCode($request->transaction_type_id),
             'transaction_date' => now(),
         ]);
 
         foreach ($request->items as $item) {
-            // **Validasi barang harus berasal dari gudang yang sama**
-            if ($gudangId === null) {
-                $gudangId = $item['gudang_id'];
-            } elseif ($gudangId !== $item['gudang_id']) {
-                throw new Exception('Barang harus berasal dari gudang yang sama.');
-            }
-
+            $item['gudang_id'] = $gudangId;
             $this->processTransactionItem($transaction->id, $item, $request->transaction_type_id);
         }
 
-        return $transaction;
+        return $transaction->load([
+            'user:id,name',
+            'transactionType:id,name',
+            'transactionDetails.barang:id,barang_kode,barang_nama',
+            'transactionDetails.gudang:id,name'
+        ]);
     }
 
+    private function getGudangIdByUserId($userId)
+    {
+        $gudang = Gudang::where('user_id', $userId)->first();
+        if (!$gudang) {
+            throw new Exception("Tidak ditemukan gudang yang terdaftar untuk user login.");
+        }
+        return $gudang->id;
+    }
 
     private function generateTransactionCode($typeId)
     {
         $prefixes = [1 => 'MSK', 2 => 'KLR', 3 => 'PJM', 4 => 'KMB'];
         $prefix = $prefixes[$typeId] ?? 'UNK';
+
         $lastTransaction = Transaction::where('transaction_type_id', $typeId)->latest('id')->first();
         $number = $lastTransaction ? str_pad($lastTransaction->id + 1, 3, '0', STR_PAD_LEFT) : '001';
+
         return "TRX-{$prefix}-{$number}";
     }
 
     private function processTransactionItem($transactionId, $item, $transactionType)
     {
-        $barang = Barang::where('barang_kode', $item['barang_kode'])->first();
-        $barangGudang = BarangGudang::where('barang_id', $barang->id)->where('gudang_id', $item['gudang_id'])->first();
+        $barang = Barang::where('barang_kode', $item['barang_kode'])->firstOrFail();
+        $barangGudang = BarangGudang::where('barang_id', $barang->id)
+            ->where('gudang_id', $item['gudang_id'])
+            ->first();
 
-        if (!$barangGudang) {
-            throw new Exception("Barang {$barang->barang_nama} tidak tersedia di gudang!");
+        // Validasi berdasarkan tipe transaksi
+        if (in_array($transactionType, [2, 3, 4]) && !$barangGudang) {
+            throw new Exception("Barang {$barang->barang_nama} belum tersedia di gudang. Masukkan terlebih dahulu.");
         }
 
-        // **Validasi tipe transaksi berdasarkan kategori barang**
-        $validTransactionType = true;
-        if ($barang->barangcategory_id == 1 && !in_array($transactionType, [1, 2])) {
-            $validTransactionType = false;
-        } elseif ($barang->barangcategory_id == 2 && !in_array($transactionType, [1, 3, 4])) {
-            $validTransactionType = false;
-        }
+
+
+        // Validasi kategori barang vs transaksi
+        $validTransactionType = match (true) {
+            $barang->barangcategory_id == 1 => in_array($transactionType, [1, 2]),
+            $barang->barangcategory_id == 2 => in_array($transactionType, [1, 3, 4]),
+            default => false,
+        };
 
         if (!$validTransactionType) {
-            throw new Exception("Jenis transaksi tidak valid untuk barang {$barang->barang_nama}!");
+            throw new Exception("Jenis transaksi tidak valid untuk barang {$barang->barang_nama}.");
         }
 
-        // **Lanjutkan transaksi setelah validasi**
-        if ($transactionType == 2 && $barangGudang->stok_tersedia < $item['quantity']) {
-            throw new Exception("Stok tidak mencukupi untuk barang {$barang->barang_nama}!");
+        // Validasi stok
+        if (in_array($transactionType, [2, 3]) && (!$barangGudang || $barangGudang->stok_tersedia < $item['quantity'])) {
+            throw new Exception("Stok tidak mencukupi untuk barang {$barang->barang_nama}.");
         }
 
-        if ($transactionType == 3 && $barangGudang->stok_tersedia < $item['quantity']) {
-            throw new Exception("Barang {$barang->barang_nama} tidak cukup untuk dipinjam!");
+        if ($transactionType == 4 && (!$barangGudang || $barangGudang->stok_dipinjam < $item['quantity'])) {
+            throw new Exception("Barang {$barang->barang_nama} dikembalikan lebih banyak dari yang dipinjam.");
         }
 
-        switch ($transactionType) {
-            case 1: // Barang Masuk
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])
-                    ->increment('stok_tersedia', $item['quantity']);
-                break;
-            case 2: // Barang Keluar
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])
-                    ->decrement('stok_tersedia', $item['quantity']);
-                break;
-            case 3: // Peminjaman
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])
-                    ->decrement('stok_tersedia', $item['quantity']);
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])
-                    ->increment('stok_dipinjam', $item['quantity']);
-                break;
-            case 4: // Pengembalian
-                if ($barangGudang->stok_dipinjam < $item['quantity']) {
-                    throw new Exception("Barang dikembalikan lebih banyak dari yang dipinjam! ({$barang->barang_nama})");
-                }
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])
-                    ->increment('stok_tersedia', $item['quantity']);
-                BarangGudang::where('barang_id', $barang->id)
-                    ->where('gudang_id', $item['gudang_id'])->decrement('stok_dipinjam', $item['quantity']);
-                break;
-        }
+        // Proses transaksi
+        match ($transactionType) {
+            1 => $this->handleBarangMasuk($barang, $item),
+            2 => $this->handleBarangKeluar($barang->id, $item),
+            3 => $this->handlePeminjaman($barang->id, $item),
+            4 => $this->handlePengembalian($barang->id, $item),
+        };
 
+        // Catat ke transaction_detail
         TransactionDetail::create([
             'transaction_id' => $transactionId,
             'barang_id' => $barang->id,
             'gudang_id' => $item['gudang_id'],
             'quantity' => $item['quantity'],
-            'tanggal_kembali' => ($transactionType == 4) ? now() : null
+            'tanggal_kembali' => $transactionType == 4 ? now() : null,
         ]);
+    }
+
+    private function validateItemTransaction($barang, $barangGudang, $item, $transactionType)
+    {
+        $validTransactionType = match (true) {
+            $barang->barangcategory_id == 1 => in_array($transactionType, [1, 2]),
+            $barang->barangcategory_id == 2 => in_array($transactionType, [1, 3, 4]),
+            default => false,
+        };
+
+        if (!$validTransactionType) {
+            throw new Exception("Jenis transaksi tidak valid untuk barang {$barang->barang_nama}.");
+        }
+
+        // Validasi stok
+        if (in_array($transactionType, [2, 3]) && (!$barangGudang || $barangGudang->stok_tersedia < $item['quantity'])) {
+            throw new Exception("Stok tidak mencukupi untuk barang {$barang->barang_nama}.");
+        }
+
+        if ($transactionType == 4 && (!$barangGudang || $barangGudang->stok_dipinjam < $item['quantity'])) {
+            throw new Exception("Barang {$barang->barang_nama} dikembalikan lebih banyak dari yang dipinjam.");
+        }
+    }
+
+    private function handleBarangMasuk($barang, $item)
+    {
+        BarangGudang::where('barang_id', $barang->id)
+            ->where('gudang_id', $item['gudang_id'])
+            ->increment('stok_tersedia', $item['quantity']);
+    }
+
+    private function handleBarangKeluar($barangId, $item)
+    {
+        BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->decrement('stok_tersedia', $item['quantity']);
+    }
+
+    private function handlePeminjaman($barangId, $item)
+    {
+        BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->decrement('stok_tersedia', $item['quantity']);
+
+        BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->increment('stok_dipinjam', $item['quantity']);
+    }
+
+    private function handlePengembalian($barangId, $item)
+    {
+        BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->increment('stok_tersedia', $item['quantity']);
+
+        BarangGudang::where('barang_id', $barangId)
+            ->where('gudang_id', $item['gudang_id'])
+            ->decrement('stok_dipinjam', $item['quantity']);
     }
 }
