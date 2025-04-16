@@ -57,6 +57,7 @@ class TransactionRepository
     private function processTransactionItem($transactionId, $item, $transactionType)
     {
         $barang = Barang::where('barang_kode', $item['barang_kode'])->firstOrFail();
+
         $barangGudang = BarangGudang::where('barang_id', $barang->id)
             ->where('gudang_id', $item['gudang_id'])
             ->first();
@@ -69,24 +70,7 @@ class TransactionRepository
 
 
         // Validasi kategori barang vs transaksi
-        $validTransactionType = match (true) {
-            $barang->barangcategory_id == 1 => in_array($transactionType, [1, 2]),
-            $barang->barangcategory_id == 2 => in_array($transactionType, [1, 3, 4]),
-            default => false,
-        };
-
-        if (!$validTransactionType) {
-            throw new Exception("Jenis transaksi tidak valid untuk barang {$barang->barang_nama}.");
-        }
-
-        // Validasi stok
-        if (in_array($transactionType, [2, 3]) && (!$barangGudang || $barangGudang->stok_tersedia < $item['quantity'])) {
-            throw new Exception("Stok tidak mencukupi untuk barang {$barang->barang_nama}.");
-        }
-
-        if ($transactionType == 4 && (!$barangGudang || $barangGudang->stok_dipinjam < $item['quantity'])) {
-            throw new Exception("Barang {$barang->barang_nama} dikembalikan lebih banyak dari yang dipinjam.");
-        }
+        $this->validateItemTransaction($barang, $barangGudang, $item, $transactionType);
 
         // Proses transaksi
         match ($transactionType) {
@@ -106,8 +90,9 @@ class TransactionRepository
         ]);
     }
 
-    private function validateItemTransaction($barang, $barangGudang, $item, $transactionType)
+    public function validateItemTransaction($barang, $barangGudang, $item, $transactionType)
     {
+        // Validasi kategori barang vs transaksi
         $validTransactionType = match (true) {
             $barang->barangcategory_id == 1 => in_array($transactionType, [1, 2]),
             $barang->barangcategory_id == 2 => in_array($transactionType, [1, 3, 4]),
@@ -128,11 +113,34 @@ class TransactionRepository
         }
     }
 
+    private function getOrCreateBarangGudang($barangId, $gudangId)
+    {
+        $barangGudang = BarangGudang::firstOrCreate(
+            [
+                'barang_id' => $barangId,
+                'gudang_id' => $gudangId
+            ],
+            ['stok_tersedia' => 0, 'stok_dipinjam' => 0, 'stok_maintenance' => 0]
+        );
+        return $barangGudang;
+    }
+
+
     private function handleBarangMasuk($barang, $item)
     {
+        // if (!$barangGudang) {
+        //     // Barang belum terdaftar di gudang, buat relasi baru
+        //     $barang->gudangs()->attach($item['gudang_id'], [
+        //         'stok_tersedia' => $item['quantity'],
+        //         'stok_dipinjam' => 0,
+        //         'stok_maintenance' => 0,
+        //     ]);
+        // } else {
+        $this->getOrCreateBarangGudang($barang->id, $item['gudang_id']);
         BarangGudang::where('barang_id', $barang->id)
             ->where('gudang_id', $item['gudang_id'])
             ->increment('stok_tersedia', $item['quantity']);
+        // }
     }
 
     private function handleBarangKeluar($barangId, $item)

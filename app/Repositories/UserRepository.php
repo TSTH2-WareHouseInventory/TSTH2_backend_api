@@ -8,7 +8,12 @@ class UserRepository
 {
     public function getAll()
     {
-        return User::paginate(10);
+        return User::all();
+    }
+
+    public function getOperators()
+    {
+        return User::query()->role('operator')->get();
     }
 
     public function getById($id)

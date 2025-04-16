@@ -145,7 +145,7 @@ class BarangService
 
         $this->barangRepository->update($barang, $updateData);
 
-        $this->attachGudangStok($barang, $data);
+        // $this->attachGudangStok($barang, $data);
 
         return $barang;
     }
@@ -192,14 +192,14 @@ class BarangService
         return uploadBase64Image($newBase64);
     }
 
-    private function attachGudangStok(Barang $barang, array $data)
-    {
-        $barang->gudangs()->syncWithoutDetaching([
-            $data['gudang_id'] => [
-                'stok_tersedia' => $data['stok_tersedia'] ?? 0,
-                'stok_dipinjam' => 0,
-                'stok_maintenance' => 0,
-            ]
-        ]);
-    }
+    // private function attachGudangStok(Barang $barang, array $data)
+    // {
+    //     $barang->gudangs()->syncWithoutDetaching([
+    //         $data['gudang_id'] => [
+    //             'stok_tersedia' => $data['stok_tersedia'] ?? 0,
+    //             'stok_dipinjam' => 0,
+    //             'stok_maintenance' => 0,
+    //         ]
+    //     ]);
+    // }
 }

@@ -32,11 +32,13 @@ Route::middleware(['auth:api'])->group(function () {
         return response()->json(['message' => 'Hanya Superadmin bisa akses']);
     });
 
+    Route::get('user/operators', [UserController::class, 'getOperators']);
     Route::apiResource('users', UserController::class);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
     Route::delete('/users/{id}/avatar', [UserController::class, 'deleteAvatar']);
 
     Route::apiResource('roles', RoleController::class);
+
 
     Route::apiResource('gudangs', GudangController::class);
 

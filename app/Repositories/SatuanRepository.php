@@ -14,12 +14,12 @@ class SatuanRepository
 
     public function findById($id)
     {
-        return Satuan::find($id);
+        return Satuan::with('user')->find($id);
     }
 
-    public function findTrashedById($id)
+    public function findTrashedByName($name)
     {
-        return Satuan::onlyTrashed()->find($id);
+        return Satuan::onlyTrashed()->where('name', $name)->first();
     }
 
     public function create(array $data)
@@ -27,19 +27,32 @@ class SatuanRepository
         return Satuan::create($data);
     }
 
-    public function update(Satuan $satuan, array $data)
+    public function update($id, array $data)
     {
-        return $satuan->update($data);
+        $satuan = $this->findById($id);
+
+        if (!$satuan) {
+            throw new \Exception('Satuan barang tidak ditemukan');
+        }
+
+        $satuan->update($data);
+        return $satuan;
     }
+
 
     public function delete(Satuan $satuan)
     {
         return $satuan->delete();
     }
 
-    public function restore(Satuan $satuan)
+    public function restore(int $id): ?Satuan
     {
-        return $satuan->restore();
+        $satuan = Satuan::onlyTrashed()->find($id);
+        if ($satuan) {
+            $satuan->restore();
+            return $satuan;
+        }
+        return null;
     }
 
     public function forceDelete(Satuan $satuan)

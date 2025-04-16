@@ -23,6 +23,12 @@ class UserService
         return $this->userRepository->getAll();
     }
 
+    public function getOperators()
+    {
+        return $this->userRepository->getOperators();
+    }
+
+
     public function getById($id)
     {
         return $this->userRepository->getById($id);
@@ -96,10 +102,8 @@ class UserService
             }
             $avatarPath = uploadBase64Image($data['avatar'], 'img/profil');
             $data['avatar'] = $avatarPath;
-
         } else {
             unset($data['avatar']);
-
         }
 
         $this->userRepository->update($user, $data);

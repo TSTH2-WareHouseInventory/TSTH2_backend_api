@@ -34,6 +34,12 @@ class UserController extends Controller implements HasMiddleware
         return UserResource::collection($this->userService->getAll());
     }
 
+    public function getOperators()
+    {
+        $operators = $this->userService->getOperators();
+        return UserResource::collection($operators);
+    }
+
     public function show($id)
     {
         try {
