@@ -23,6 +23,7 @@ Route::prefix('auth')->group(function () {
     // untuk logout dan cek user info
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
+        Route::get('user', [AuthController::class, 'userInfo'])->name('auth.user');
     });
 });
 
@@ -39,7 +40,6 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::apiResource('roles', RoleController::class);
 
-
     Route::apiResource('gudangs', GudangController::class);
 
     Route::apiResource('satuans', SatuanController::class);
@@ -48,6 +48,8 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::apiResource('transaction-types', TransactionTypeController::class);
 
+    // routes/api.php
+    Route::get('transactions/check-barcode/{kode}', [TransactionController::class, 'checkBarcode']);
     Route::apiResource('transactions', TransactionController::class);
 
     Route::apiResource('jenis-barangs', JenisBarangController::class);
@@ -60,12 +62,13 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/barang/qrcode/save/{id}', [QRCodeController::class, 'generateQRCodeImage']);
     Route::get('/generate-qrcodes', [QRCodeController::class, 'generateAllQRCodesImage']);
 
-    Route::get('/export-pdf/{id}', [QRCodeController::class, 'generateQRCodePDF']);
+    Route::get('/barangs/export-pdf/{id}', [QRCodeController::class, 'generateQRCodePDF']);
     Route::get('/export-pdf', [QRCodeController::class, 'generateAllQRCodesPDF']);
 });
-
-Route::post('/toggle-permission', [PermissionController::class, 'togglePermission'])
-    ->middleware(['auth:api', 'role_or_permission:superadmin|manage_permissions']);
+Route::middleware(['auth:api', 'role_or_permission:superadmin|manage_permissions'])->group(function () {
+    Route::post('/toggle-permission', [PermissionController::class, 'togglePermission']);
+    Route::get('/permission', [PermissionController::class, 'index']);
+});
 
 //memastikan cek role login
 Route::middleware(['auth:api'])->get('/check-roles', [UserController::class, 'checkRoles']);

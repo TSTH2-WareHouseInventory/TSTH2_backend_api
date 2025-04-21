@@ -32,6 +32,8 @@ class RoleSeeder extends Seeder
         // permission untuk operator
         $operator->givePermissionTo([
             'view_barang',
+            'create_transaction',
+            'view_transaction'
         ]);
     }
 }

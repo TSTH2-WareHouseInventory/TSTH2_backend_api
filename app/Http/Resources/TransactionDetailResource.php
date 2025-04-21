@@ -14,6 +14,10 @@ class TransactionDetailResource extends JsonResource
                 'id' => $this->barang->id,
                 'kode' => $this->barang->barang_kode,
                 'nama' => $this->barang->barang_nama,
+                // 'kategori' => $this->barang->category ? $this->barang->category->name : null,  // Nama kategori
+                // 'satuan' => $this->barang->satuan ? $this->barang->satuan->name : null,  // Nama satuan
+                // 'harga' => $this->barang->barang_harga,
+                // 'stok_tersedia' => $this->barang->gudangs->first()->pivot->stok_tersedia,  // Stok yang tersedia di gudang pertama
             ],
             'gudang' => [
                 'id' => $this->gudang->id,

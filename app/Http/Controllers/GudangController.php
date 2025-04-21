@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\GudangResource;
-use App\Http\Resources\UserResource;
 use App\Services\GudangService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -36,30 +35,45 @@ class GudangController extends Controller implements HasMiddleware
         return GudangResource::collection($gudang);
     }
 
-
     public function store(Request $request)
     {
         try {
-
             $data = $request->only(['name', 'description', 'user_id']);
 
             $existingGudang = $this->gudangService->findTrashedByName($data['name']);
             if ($existingGudang) {
                 $gudang = $this->gudangService->restore($existingGudang->id);
-            } else {
-                $gudang = $this->gudangService->create($data);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data gudang yang sebelumnya dihapus telah berhasil direstore.',
+                    'restored' => true,
+                    'data' => new GudangResource($gudang)
+                ], 200); // Set status code eksplisit OK
             }
 
+            $gudang = $this->gudangService->create($data);
+
             return response()->json([
-                'message' => 'Data gudang berhasil dibuat',
+                'success' => true,
+                'message' => 'Data gudang berhasil dibuat.',
+                'restored' => false,
                 'data'    => new GudangResource($gudang),
-            ], 201);
+            ], 201); // Created
         } catch (ValidationException $e) {
             return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan data gudang.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     public function show($id)
     {
@@ -72,17 +86,18 @@ class GudangController extends Controller implements HasMiddleware
     {
         try {
             $updated = $this->gudangService->update($id, $request->all());
-
             $gudang = $this->gudangService->getById($id);
             return $updated ? response()->json([
-                'message' =>
-                'Gudang berhasil diperbarui',
+                'success' => true,
+                'message' => 'Gudang berhasil diperbarui',
                 'data' => new GudangResource($gudang),
             ]) : response()->json([
-                'message' => 'Gudang tidak ditemukan'
+                'success' => false,
+                'message' => 'Gudang tidak ditemukan',
             ], 404);
         } catch (ValidationException $e) {
             return response()->json([
+                'success' => false,
                 'errors' => $e->errors()
             ], 400);
         }
@@ -90,14 +105,14 @@ class GudangController extends Controller implements HasMiddleware
     public function destroy($id)
     {
         $deleted = $this->gudangService->delete($id);
-        return $deleted ? response()->json(['message' => 'Gudang berhasil dihapus']) : response()->json(['message' => 'Gudang tidak ditemukan'], 404);
+        return $deleted ? response()->json(['success' => true, 'message' => 'Gudang berhasil dihapus']) : response()->json(['success' => false, 'message' => 'Gudang tidak ditemukan'], 404);
     }
 
     // Mengembalikan gudang yang telah dihapus
     public function restore($id)
     {
         $gudang = $this->gudangService->restore($id);
-        return $gudang ? new GudangResource($gudang) : response()->json(['message' => 'Gudang tidak ditemukan'], 404);
+        return $gudang ? new GudangResource($gudang) : response()->json(['success' => false, 'message' => 'Gudang tidak ditemukan'], 404);
     }
 
     // Menghapus gudang secara permanen

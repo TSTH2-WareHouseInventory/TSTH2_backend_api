@@ -7,10 +7,10 @@ use App\Http\Resources\TransactionResource;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
-
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
-class TransactionController extends Controller
+class TransactionController extends Controller implements HasMiddleware
 {
     protected $transactionService;
 
@@ -31,7 +31,12 @@ class TransactionController extends Controller
 
     public function index(Request $request)
     {
-        $query = Transaction::with(['user', 'transactionType', 'transactionDetails.barang', 'transactionDetails.gudang']);
+        $query = Transaction::with([
+            'user',
+            'transactionType',
+            'transactionDetails.barang',
+            'transactionDetails.gudang'
+        ]);
 
         if (!$request->user()->hasRole('superadmin')) {
             $query->where('user_id', $request->user()->id);
@@ -64,5 +69,17 @@ class TransactionController extends Controller
             'message' => 'Transaction berhasil dibuat!',
             'data' => new TransactionResource($result['data'])
         ]);
+    }
+
+    public function checkBarcode($barcode)
+    {
+        $result = $this->transactionService->checkBarcode($barcode);
+
+        // Memastikan status yang digunakan sesuai (true/false)
+        if ($result['success'] == 'false') {
+            return response()->json($result, 404);
+        }
+
+        return response()->json($result, 200); // Status true mengembalikan 200
     }
 }

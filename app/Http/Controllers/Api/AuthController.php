@@ -3,81 +3,62 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-
-use App\Models\User;
+use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Laravel\Passport\Token;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    protected $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
+    public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email'    => 'required|string|email',
+            'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
-        if (!$user) {
-            return response()->json([
-                'response_code' => '401',
-                'status'        => 'error',
-                'message'       => 'Email tidak ditemukan',
-            ], 401);
-        }
-        if (!Hash::check($credentials['password'], $user->password)) {
-            return response()->json([
-                'response_code' => '401',
-                'status'        => 'error',
-                'message'       => 'Password salah',
-            ], 401);
-        }
+        $result = $this->authService->login($credentials);
 
-        $accessToken = $user->createToken('authToken')->accessToken;
-
-        return response()->json([
-            'response_code' => '200',
-            'status'        => 'success',
-            'message'       => 'Login berhasil',
-            'data' => [
-                'user'  => $user,
-                'token' => $accessToken,
-            ],
-        ], 200);
+        return response()->json($result, $result['response_code']);
     }
 
-
-
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
-        try {
-            $user = Auth::user();
+        $user = Auth::user();
+        $result = $this->authService->logout($user);
 
-            if ($user) {
-                Token::where('user_id', $user->id)->update(['revoked' => true]);
+        return response()->json($result, $result['response_code']);
+    }
 
-                return response()->json([
-                    'response_code' => '200',
-                    'status'        => 'success',
-                    'message'       => 'Logout successful',
-                ], 200);
-            }
+    public function userInfo(Request $request): JsonResponse
+    {
+        $user = Auth::user();
 
+        if (!$user) {
             return response()->json([
-                'response_code' => '401',
-                'status'        => 'error',
-                'message'       => 'User not authenticated',
+                'status' => 'error',
+                'message' => 'Unauthenticated',
             ], 401);
-        } catch (\Exception $e) {
-            Log::error($e);
-            return response()->json([
-                'response_code' => '500',
-                'status'        => 'error',
-                'message'       => 'Failed to logout',
-            ], 500);
         }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'roles' => $user->roles ? $user->roles->pluck('name') : [],
+                'created_at' => $user->created_at,
+            ],
+        ], 200);
     }
 }

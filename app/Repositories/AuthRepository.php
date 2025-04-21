@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use Laravel\Passport\Token;
 
 class AuthRepository
 {
@@ -11,8 +12,23 @@ class AuthRepository
         return User::where('email', $email)->first();
     }
 
-    public function revokeAllTokens(User $user): void
+    public function createToken(User $user): string
     {
-        $user->tokens()->update(['revoked' => true]);
+        return $user->createToken('authToken')->accessToken;
+    }
+
+    public function getUserPermissions(User $user): \Illuminate\Support\Collection
+    {
+        return $user->getAllPermissions()->pluck('name');
+    }
+
+    public function getUserRoles(User $user): \Illuminate\Support\Collection
+    {
+        return $user->getRoleNames();
+    }
+
+    public function revokeTokens(User $user): void
+    {
+        Token::where('user_id', $user->id)->update(['revoked' => true]);
     }
 }

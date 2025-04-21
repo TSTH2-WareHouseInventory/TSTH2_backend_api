@@ -171,4 +171,10 @@ class TransactionRepository
             ->where('gudang_id', $item['gudang_id'])
             ->decrement('stok_dipinjam', $item['quantity']);
     }
+
+
+    public function findBarangByKode($kode)
+    {
+        return Barang::where('barang_kode', $kode)->first();
+    }
 }

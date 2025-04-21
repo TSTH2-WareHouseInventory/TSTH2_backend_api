@@ -46,7 +46,6 @@ class GudangService
             'name.unique'       => 'Nama gudang sudah digunakan.',
             'user_id.required'  => 'User operator wajib dipilih.',
             'user_id.exists'    => 'User tidak ditemukan.',
-
         ]);
 
         if ($validator->fails()) {
@@ -66,37 +65,6 @@ class GudangService
         // Simpan dalam transaction
         return DB::transaction(fn() => $this->gudangRepository->create($validated));
     }
-
-    // public function update(int $id, array $data)
-    // {
-    //     $gudang = $this->gudangRepository->findById($id);
-
-    //     if (!$gudang) {
-    //         throw new \Exception('Gudang not found');
-    //     }
-
-    //     $validator = Validator::make($data, [
-    //         'name' => ['required', 'string', 'max:255'],
-    //         'description' => ['nullable', 'string'],
-    //         'user_id'     => ['required', 'exists:users,id', new IsOperatorUser()],
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         throw new ValidationException($validator);
-    //     }
-
-    //     $validatedData = $validator->validated();
-    //     $validatedData['slug'] = Str::slug($validatedData['name']);
-
-    //     // ⛔ Cek user_id unik di gudang lain (kecuali dirinya sendiri)
-    //     $existingGudang = $this->gudangRepository->findByUserId($validatedData['user_id']);
-    //     if ($existingGudang && $existingGudang->id !== $gudang->id) {
-    //         throw ValidationException::withMessages([
-    //             'user_id' => 'User ini sudah diassign ke gudang lain.',
-    //         ]);
-    //     }
-    //     return DB::transaction(fn() => $this->gudangRepository->update($gudang, $validatedData));
-    // }
 
     public function update(int $id, array $data)
     {
